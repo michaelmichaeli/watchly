@@ -71,7 +71,7 @@ No extra text, just the JSON array.`;
         { role: 'user', content: prompt },
       ],
       temperature: 0.9,
-      max_tokens: 1000,
+      max_tokens: 2048,
     }),
   });
 
@@ -86,7 +86,16 @@ No extra text, just the JSON array.`;
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (!jsonMatch) throw new Error('AI returned invalid format');
 
-  const parsed: AIRecommendation[] = JSON.parse(jsonMatch[0]);
+  let parsed: AIRecommendation[];
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch {
+    // If JSON is truncated, try to salvage complete entries
+    const entryPattern = /\{\s*"title"\s*:\s*"[^"]+"\s*,\s*"year"\s*:\s*\d+\s*,\s*"reason"\s*:\s*"[^"]*"\s*\}/g;
+    const entries = jsonMatch[0].match(entryPattern);
+    if (!entries?.length) throw new Error('AI returned invalid format');
+    parsed = JSON.parse(`[${entries.join(',')}]`);
+  }
   return parsed.filter((r) => r.title && r.year).map((r) => ({
     ...r,
     reason: r.reason ?? '',
