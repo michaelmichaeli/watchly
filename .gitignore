@@ -4,3 +4,4 @@ dist
 .env.local
 *.local
 .vercel
+package-lock.json
