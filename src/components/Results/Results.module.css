@@ -91,6 +91,59 @@
   height: 1px;
 }
 
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.filterChips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.filterChip {
+  padding: 0.35rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.filterChip:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.filterChipActive {
+  background-color: var(--accent-gold);
+  color: #000;
+}
+
+.filterChipActive:hover {
+  background-color: #d4a017;
+  color: #000;
+}
+
+.noMatch {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  padding: 2rem 0;
+}
+
 @media (max-width: 600px) {
   .title {
     font-size: 1.3rem;
