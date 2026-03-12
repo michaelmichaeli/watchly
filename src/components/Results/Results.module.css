@@ -87,6 +87,10 @@
   font-size: 1.05rem;
 }
 
+.sentinel {
+  height: 1px;
+}
+
 @media (max-width: 600px) {
   .title {
     font-size: 1.3rem;

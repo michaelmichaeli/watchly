@@ -47,7 +47,7 @@ export async function getAIRecommendations(
     ? `\nThe user also said: "${userPrompt.trim()}". Factor this into your picks.`
     : '';
 
-  const prompt = `Recommend exactly 8 great ${genre} movies for ${audienceDesc}.${extraContext}
+  const prompt = `Recommend exactly 20 great ${genre} movies for ${audienceDesc}.${extraContext}
 Pick a diverse mix of well-known classics and hidden gems from different decades.
 For each movie, include a short 1-sentence reason why you recommend it for this viewer.
 Return ONLY a JSON array with objects containing "title" (string), "year" (number), and "reason" (string).
@@ -71,7 +71,7 @@ No extra text, just the JSON array.`;
         { role: 'user', content: prompt },
       ],
       temperature: 0.9,
-      max_tokens: 2048,
+      max_tokens: 4096,
     }),
   });
 

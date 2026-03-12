@@ -3,6 +3,7 @@ import {
   useContext,
   useCallback,
   useState,
+  useRef,
   type ReactNode,
 } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -26,9 +27,70 @@ interface AppContextValue {
   isSeen: (movieId: number) => boolean;
   fetchRecommendations: (selections: WizardSelections) => Promise<void>;
   clearResults: () => void;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  loadMore: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
+
+const BATCH_SIZE = 4;
+
+type TMDBResult = {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  release_date: string;
+  vote_average: number;
+};
+
+async function enrichMovieBatch(
+  movies: TMDBResult[],
+  reasonMap: Map<string, string>
+): Promise<Movie[]> {
+  return Promise.all(
+    movies.map(async (tmdbMovie) => {
+      try {
+        const details = await getMovieDetails(tmdbMovie.id);
+        const scores = details.imdb_id
+          ? await getOMDBScores(details.imdb_id)
+          : { imdbRating: null, rottenTomatoesRating: null };
+        return {
+          id: tmdbMovie.id,
+          title: tmdbMovie.title,
+          overview: tmdbMovie.overview,
+          posterPath: tmdbMovie.poster_path
+            ? `${IMAGE_BASE_URL}${tmdbMovie.poster_path}`
+            : null,
+          releaseDate: tmdbMovie.release_date,
+          tmdbRating: tmdbMovie.vote_average,
+          imdbRating: scores.imdbRating,
+          rottenTomatoesRating: scores.rottenTomatoesRating,
+          genres: details.genres.map((g) => g.name),
+          runtime: details.runtime,
+          aiReason: reasonMap.get(tmdbMovie.title.toLowerCase()) ?? null,
+        };
+      } catch {
+        return {
+          id: tmdbMovie.id,
+          title: tmdbMovie.title,
+          overview: tmdbMovie.overview,
+          posterPath: tmdbMovie.poster_path
+            ? `${IMAGE_BASE_URL}${tmdbMovie.poster_path}`
+            : null,
+          releaseDate: tmdbMovie.release_date,
+          tmdbRating: tmdbMovie.vote_average,
+          imdbRating: null,
+          rottenTomatoesRating: null,
+          genres: [],
+          runtime: null,
+          aiReason: reasonMap.get(tmdbMovie.title.toLowerCase()) ?? null,
+        };
+      }
+    })
+  );
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentView, setCurrentView] = useState<View>('wizard');
@@ -37,6 +99,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [watchlist, setWatchlist] = useLocalStorage<Movie[]>('watchly-watchlist', []);
   const [seenIds, setSeenIds] = useLocalStorage<number[]>('watchly-seen', []);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const pendingMoviesRef = useRef<TMDBResult[]>([]);
+  const reasonMapRef = useRef(new Map<string, string>());
+  const loadingMoreRef = useRef(false);
 
   const addToWatchlist = useCallback(
     (movie: Movie) => {
@@ -81,6 +148,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       setError(null);
+      setResults([]);
+      setHasMore(false);
 
       try {
         const aiRecs = await getAIRecommendations(
@@ -89,9 +158,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           selections.prompt
         );
 
-        const reasonMap = new Map(
+        const rMap = new Map(
           aiRecs.map((r) => [r.title.toLowerCase(), r.reason])
         );
+        reasonMapRef.current = rMap;
 
         const searchResults = await Promise.all(
           aiRecs.map((rec) => searchMovieByTitle(rec.title, rec.year))
@@ -101,58 +171,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           (m): m is NonNullable<typeof m> => m !== null && !seenIds.includes(m.id)
         );
 
-        const moviesToShow = foundMovies.slice(0, 6);
-
-        if (moviesToShow.length === 0) {
+        if (foundMovies.length === 0) {
           setError('No new movies found. Try different selections or clear your seen history!');
           setIsLoading(false);
           return;
         }
 
-        const enriched: Movie[] = await Promise.all(
-          moviesToShow.map(async (tmdbMovie) => {
-            try {
-              const details = await getMovieDetails(tmdbMovie.id);
-              const scores = details.imdb_id
-                ? await getOMDBScores(details.imdb_id)
-                : { imdbRating: null, rottenTomatoesRating: null };
+        const firstBatch = foundMovies.slice(0, BATCH_SIZE);
+        const remaining = foundMovies.slice(BATCH_SIZE);
+        pendingMoviesRef.current = remaining;
 
-              return {
-                id: tmdbMovie.id,
-                title: tmdbMovie.title,
-                overview: tmdbMovie.overview,
-                posterPath: tmdbMovie.poster_path
-                  ? `${IMAGE_BASE_URL}${tmdbMovie.poster_path}`
-                  : null,
-                releaseDate: tmdbMovie.release_date,
-                tmdbRating: tmdbMovie.vote_average,
-                imdbRating: scores.imdbRating,
-                rottenTomatoesRating: scores.rottenTomatoesRating,
-                genres: details.genres.map((g) => g.name),
-                runtime: details.runtime,
-                aiReason: reasonMap.get(tmdbMovie.title.toLowerCase()) ?? null,
-              };
-            } catch {
-              return {
-                id: tmdbMovie.id,
-                title: tmdbMovie.title,
-                overview: tmdbMovie.overview,
-                posterPath: tmdbMovie.poster_path
-                  ? `${IMAGE_BASE_URL}${tmdbMovie.poster_path}`
-                  : null,
-                releaseDate: tmdbMovie.release_date,
-                tmdbRating: tmdbMovie.vote_average,
-                imdbRating: null,
-                rottenTomatoesRating: null,
-                genres: [],
-                runtime: null,
-                aiReason: reasonMap.get(tmdbMovie.title.toLowerCase()) ?? null,
-              };
-            }
-          })
-        );
-
+        const enriched = await enrichMovieBatch(firstBatch, rMap);
         setResults(enriched);
+        setHasMore(remaining.length > 0);
         setCurrentView('results');
       } catch (err) {
         setError(
@@ -165,8 +196,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [seenIds]
   );
 
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || pendingMoviesRef.current.length === 0) return;
+
+    loadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    try {
+      const nextBatch = pendingMoviesRef.current.slice(0, BATCH_SIZE);
+      pendingMoviesRef.current = pendingMoviesRef.current.slice(BATCH_SIZE);
+
+      const enriched = await enrichMovieBatch(nextBatch, reasonMapRef.current);
+      setResults((prev) => [...prev, ...enriched]);
+      setHasMore(pendingMoviesRef.current.length > 0);
+    } catch {
+      // Silently fail — user can try scrolling again
+    } finally {
+      loadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setResults([]);
+    pendingMoviesRef.current = [];
+    reasonMapRef.current = new Map();
+    setHasMore(false);
   }, []);
 
   return (
@@ -186,6 +241,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isSeen,
         fetchRecommendations,
         clearResults,
+        isLoadingMore,
+        hasMore,
+        loadMore,
       }}
     >
       {children}
