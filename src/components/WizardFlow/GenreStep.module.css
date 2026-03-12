@@ -1,0 +1,72 @@
+.stepTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.85rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.25rem 0.75rem;
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+  border: 2px solid transparent;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.card:hover {
+  background-color: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.cardSelected {
+  border-color: var(--accent-gold);
+  background-color: var(--bg-card-hover);
+}
+
+.emoji {
+  font-size: 1.6rem;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+
+  .card {
+    padding: 1rem 0.5rem;
+  }
+
+  .emoji {
+    font-size: 1.3rem;
+  }
+
+  .label {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

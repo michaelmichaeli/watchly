@@ -1,0 +1,133 @@
+.wizard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.titleAccent {
+  color: var(--accent-gold);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--border);
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.dotActive {
+  background-color: var(--accent-gold);
+  transform: scale(1.25);
+}
+
+.dotDone {
+  background-color: var(--accent-green);
+}
+
+.line {
+  width: 40px;
+  height: 2px;
+  background-color: var(--border);
+  transition: background-color 0.3s;
+}
+
+.lineDone {
+  background-color: var(--accent-green);
+}
+
+.stepContainer {
+  width: 100%;
+  max-width: 700px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stepNav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.backButton {
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.backButton:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.spacer {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    margin-bottom: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.4rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .progress {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .line {
+    width: 28px;
+  }
+
+  .stepContainer {
+    max-width: 100%;
+  }
+
+  .backButton {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
