@@ -15,7 +15,11 @@ export default function Results() {
 
   const filteredResults = useMemo(() => {
     if (minRating === null) return results;
-    return results.filter((m) => m.tmdbRating >= minRating);
+    return results.filter((m) => {
+      if (!m.imdbRating) return false;
+      const score = parseFloat(m.imdbRating);
+      return !isNaN(score) && score >= minRating;
+    });
   }, [results, minRating]);
 
   useEffect(() => {
